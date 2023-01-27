@@ -3,11 +3,21 @@
 #include <queue>
 #include <vector>
 #include <cstring>
+#include <numeric>
 
 using namespace std::chrono;
 using namespace std;
 
 using Duration = nanoseconds;
+
+float average(std::vector<int> const& v){
+    if(v.empty()){
+        return 0;
+    }
+
+    auto const count = static_cast<float>(v.size());
+    return reduce(v.begin(), v.end()) / count;
+}
 
 inline void clflush(void *p) {
     asm volatile("clflush (%0)" : : "r"(p) : "memory");
@@ -92,9 +102,10 @@ int main(int argc, char *argv[])
         median = max_heap.top();
     }
 
-    int cache_size = median*sizeof(int)/1024;
+    const int average_cache_size = average(times)*sizeof(int)/1024;
+    int median_cache_size = median*sizeof(int)/1024;
 
-    cout << "After " << num_iterations << " iterations, L1 size approximate is: " << cache_size << endl;
+    cout << "After " << num_iterations << " iterations, L1 size approximate is: " << average_cache_size << endl;
     
     return 0;
 }
