@@ -2,20 +2,33 @@
 #include <chrono>
 #include <queue>
 #include <vector>
+#include <cstring>
+
 using namespace std::chrono;
 using namespace std;
 
 using Duration = nanoseconds;
+
+inline void clflush(void *p) {
+    asm volatile("clflush (%0)" : : "r"(p) : "memory");
+}
 
 int getMissIdx(int threshold)
 {
     const int l1_arr_size = 1024*1024;
     
     int l1_size = 0;
-    int l1_array[1024*1024];
+    int l1_array[l1_arr_size];
+    memset(l1_array, 0, sizeof(int) * l1_arr_size);
 
+    // flush L1 cache
+    for (int i = 0; i < l1_arr_size; i += 64){
+        clflush(&l1_array[i]);
+    }
+
+    // find cache miss
     auto last_time = high_resolution_clock::now();
-    for(int i = 0; i < 1024*1024; ++i)
+    for(int i = 0; i < l1_arr_size; ++i)
     {
         auto current_time = high_resolution_clock::now();
         Duration diff = duration_cast<Duration>(current_time - last_time);
@@ -27,16 +40,26 @@ int getMissIdx(int threshold)
         l1_array[i] = i;
         last_time = current_time;
     }
-    cout << "never found something over threshold" << endl;
 
     return -1;
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
-    const int threshold = 60;
-    const int num_iterations = 10000;
+
+    int threshold = 200;
+    int num_iterations = 1000;
+
+    if (argc != 3) {
+        cout << "Using default values | threshold = 200, iterations = 1000\n";
+        cout << "You may provide custom arguments | ./cache [threshold] [iterations]\n";
+    } else {
+        threshold = stoi(argv[1]);
+        num_iterations = stoi(argv[2]);
+    }
+
+    cout << "\n";
 
     priority_queue<int, vector<int>, less<int>> min_heap;
     priority_queue<int, vector<int>, greater<int>> max_heap;
@@ -71,7 +94,7 @@ int main()
 
     int cache_size = median*sizeof(int)/1024;
 
-    cout << "L1 size is: " << cache_size << endl;
+    cout << "After " << num_iterations << " iterations, L1 size approximate is: " << cache_size << endl;
     
-    return 1;
+    return 0;
 }
