@@ -4,19 +4,29 @@
 #include <vector>
 #include <cstring>
 #include <numeric>
+#include <cmath> 
 
 using namespace std::chrono;
 using namespace std;
 
 using Duration = nanoseconds;
 
-float average(std::vector<int> const& v){
+double average(vector<int> v){
     if(v.empty()){
         return 0;
     }
 
-    auto const count = static_cast<float>(v.size());
+    auto const count = static_cast<double>(v.size());
     return reduce(v.begin(), v.end()) / count;
+}
+
+double standard_deviation(vector<int> numbers) {
+    double m = average(numbers);
+    double accum = 0.0;
+    for(const auto &n : numbers) {
+        accum += (n - m) * (n - m);
+    }
+    return sqrt(accum / (numbers.size() - 1));
 }
 
 inline void clflush(void *p) {
@@ -102,10 +112,14 @@ int main(int argc, char *argv[])
         median = max_heap.top();
     }
 
-    const int average_cache_size = average(times)*sizeof(int)/1024;
+    int average_cache_size = average(times)*sizeof(int)/1024;
     int median_cache_size = median*sizeof(int)/1024;
+    double stdev = standard_deviation(times)*sizeof(int)/1024;
 
-    cout << "After " << num_iterations << " iterations, L1 size approximate is: " << average_cache_size << endl;
+    cout << "After " << num_iterations << " iterations, here is L1 size approximate data: " << endl;
+    cout << "Average: " << average_cache_size << endl;
+    cout << "Median: " << median_cache_size << endl;
+    cout << "Standard Deviation: " << stdev << endl;
     
     return 0;
 }
